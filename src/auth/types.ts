@@ -7,7 +7,16 @@ export interface UserIdentity {
 }
 
 /** Result of the authenticate step */
-export type AuthResult = { status: "authenticated" } | { status: "denied"; reason: string };
+export type AuthResult =
+  | {
+      status: "authenticated";
+      /**
+       * Per-user permissions to apply this session.
+       * If omitted, the framework's default permissions are used (all tools and workflows allowed).
+       */
+      permissions?: UserPermissions;
+    }
+  | { status: "denied"; reason: string };
 
 /** What a user is allowed to do */
 export interface UserPermissions {

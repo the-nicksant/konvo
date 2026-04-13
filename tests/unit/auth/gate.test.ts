@@ -51,16 +51,33 @@ describe("runAuthGate — cache hit", () => {
     await runAuthGate(session, "5511", { authenticate }, NOW);
     expect(authenticate).toHaveBeenCalledOnce();
   });
+
+  it("re-authenticates on every call when cacheFor is 0", async () => {
+    const authenticate = vi.fn().mockResolvedValue({ status: "authenticated" });
+    const session = createTestSession({ auth: { status: "authenticated", cachedUntil: NOW } });
+    await runAuthGate(session, "5511", { authenticate, cacheFor: 0 }, NOW);
+    expect(authenticate).toHaveBeenCalledOnce();
+  });
+
+  it("does not allow a pending status as a cache hit", async () => {
+    const authenticate = vi.fn().mockResolvedValue({ status: "authenticated" });
+    const session = createTestSession({
+      auth: { status: "pending", cachedUntil: NOW + 60_000 },
+    });
+    await runAuthGate(session, "5511", { authenticate }, NOW);
+    expect(authenticate).toHaveBeenCalledOnce();
+  });
 });
 
 describe("runAuthGate — known user + authenticated", () => {
   it("resolves identity and allows when authenticate returns authenticated", async () => {
     const identity = { id: "u1", name: "Maria", phone: "5511", metadata: {} };
+    const resolve = vi.fn().mockResolvedValue(identity);
     const result = await runAuthGate(
       createTestSession(),
       "5511",
       {
-        resolve: async () => identity,
+        resolve,
         authenticate: async () => ({ status: "authenticated" }),
       },
       NOW,
@@ -69,6 +86,36 @@ describe("runAuthGate — known user + authenticated", () => {
     if (result.outcome === "allow") {
       expect(result.identity).toEqual(identity);
     }
+    expect(resolve).toHaveBeenCalledWith("5511");
+  });
+
+  it("uses per-user permissions returned by authenticate", async () => {
+    const adminPerms = {
+      role: "admin",
+      allowedTools: "*" as const,
+      allowedWorkflows: "*" as const,
+    };
+    const result = await runAuthGate(
+      createTestSession(),
+      "5511",
+      { authenticate: async () => ({ status: "authenticated", permissions: adminPerms }) },
+      NOW,
+    );
+    expect(result.outcome).toBe("allow");
+    if (result.outcome === "allow") {
+      expect(result.permissions).toEqual(adminPerms);
+    }
+  });
+
+  it("resolve returning null (unknown user) is passed to authenticate", async () => {
+    const authenticate = vi.fn().mockResolvedValue({ status: "authenticated" });
+    await runAuthGate(
+      createTestSession(),
+      "5511",
+      { resolve: async () => null, authenticate },
+      NOW,
+    );
+    expect(authenticate).toHaveBeenCalledWith(null, "5511");
   });
 
   it("sets cachedUntil based on cacheFor config", async () => {

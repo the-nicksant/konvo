@@ -50,7 +50,8 @@ export async function runAuthGate(
   }
 
   // Cache hit — trust the previously stored auth status
-  if (session.auth.status !== null && now < session.auth.cachedUntil) {
+  const terminalStatus = session.auth.status === "authenticated" || session.auth.status === "guest";
+  if (terminalStatus && now < session.auth.cachedUntil) {
     return {
       outcome: "allow",
       identity: session.customer,
@@ -78,7 +79,7 @@ export async function runAuthGate(
     return {
       outcome: "allow",
       identity,
-      permissions: DEFAULT_PERMISSIONS,
+      permissions: authResult.permissions ?? DEFAULT_PERMISSIONS,
       cachedUntil: now + cacheForMs,
     };
   }
