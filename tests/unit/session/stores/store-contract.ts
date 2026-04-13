@@ -99,23 +99,24 @@ export function testSessionStoreContract(createStore: () => SessionStore) {
   });
 
   describe("cleanup", () => {
-    it("deletes sessions older than the cutoff date", async () => {
+    // Stores tested by this contract must implement cleanup().
+    it("deletes sessions older than the cutoff date and returns the count", async () => {
       const old = createTestSession({
         id: "wa_old" as SessionId,
         lastMessageAt: new Date("2025-01-01T00:00:00.000Z"),
       });
+      // Future date — will never be expired by TTL or cleanup during the test run
       const recent = createTestSession({
         id: "wa_recent" as SessionId,
-        lastMessageAt: new Date("2026-06-01T00:00:00.000Z"),
+        lastMessageAt: new Date("2099-01-01T00:00:00.000Z"),
       });
       await store.set(old.id, old);
       await store.set(recent.id, recent);
 
       const cutoff = new Date("2026-01-01T00:00:00.000Z");
-      if (store.cleanup) {
-        const count = await store.cleanup(cutoff);
-        expect(count).toBe(1);
-      }
+      if (!store.cleanup) throw new Error("Store must implement cleanup()");
+      const count = await store.cleanup(cutoff);
+      expect(count).toBe(1);
 
       expect(await store.get(old.id)).toBeNull();
       expect(await store.get(recent.id)).not.toBeNull();

@@ -66,11 +66,12 @@ export function appendMessages(
   session.messageCount++;
   session.lastMessageAt = new Date();
 
-  // Sliding window: trim from the front, but always preserve index 0
+  // Sliding window: trim in pairs from index 1 to preserve user/assistant alternation.
+  // Always keeps index 0 (the original intent message).
   if (session.messages.length > historyWindow) {
     const overflow = session.messages.length - historyWindow;
-    // Keep message[0] (original intent), remove from index 1 onward
-    session.messages.splice(1, overflow);
+    const pairsToRemove = Math.ceil(overflow / 2) * 2;
+    session.messages.splice(1, pairsToRemove);
   }
 }
 
