@@ -73,6 +73,64 @@ describe("parseInbound — location", () => {
   });
 });
 
+describe("parseInbound — image without caption", () => {
+  it("omits caption field when image has no caption", () => {
+    const payload = {
+      entry: [
+        {
+          changes: [
+            {
+              value: {
+                messages: [
+                  {
+                    from: "5511999887766",
+                    id: "wamid.img002",
+                    timestamp: "1736000300",
+                    type: "image",
+                    image: { id: "media_img_002" },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const msg = adapter.parseInbound(payload);
+    expect(msg?.content).toEqual({ type: "image", mediaId: "media_img_002" });
+    expect(msg?.content).not.toHaveProperty("caption");
+  });
+});
+
+describe("parseInbound — missing contacts", () => {
+  it("omits userName when contacts array is absent", () => {
+    const payload = {
+      entry: [
+        {
+          changes: [
+            {
+              value: {
+                messages: [
+                  {
+                    from: "5511999887766",
+                    id: "wamid.txt002",
+                    timestamp: "1736000000",
+                    type: "text",
+                    text: { body: "hi" },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+    const msg = adapter.parseInbound(payload);
+    expect(msg).not.toBeNull();
+    expect(msg).not.toHaveProperty("userName");
+  });
+});
+
 describe("parseInbound — non-message events", () => {
   it("returns null for status updates", () => {
     expect(adapter.parseInbound(statusUpdatePayload)).toBeNull();

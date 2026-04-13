@@ -34,5 +34,5 @@ export interface WhatsAppMessage {
     list_reply?: { id: string; title: string };
   };
   image?: { id: string; caption?: string };
-  location?: { latitude: number; longitude: number };
+  location?: { latitude: string; longitude: string };
 }

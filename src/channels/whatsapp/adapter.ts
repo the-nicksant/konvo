@@ -2,7 +2,7 @@ import { WhatsAppAPI } from "whatsapp-api-js";
 import type { InboundMessage, OutboundMessage } from "../../types/messages.js";
 import type { ChannelAdapter } from "../interface.js";
 import { buildMessage } from "./message-builders.js";
-import type { WhatsAppWebhookPayload } from "./types.js";
+import type { WhatsAppMessage, WhatsAppWebhookPayload } from "./types.js";
 
 export interface WhatsAppConfig {
   /** Phone Number ID from Meta Developer Portal */
@@ -13,6 +13,12 @@ export interface WhatsAppConfig {
   verifyToken: string;
   /** App Secret for HMAC signature verification */
   appSecret: string;
+  /**
+   * WhatsApp Cloud API version to pin (default: "v22.0").
+   * Pinning prevents silent breakage when the library's default changes.
+   * @example "v22.0"
+   */
+  apiVersion?: string;
 }
 
 /**
@@ -36,7 +42,11 @@ export class WhatsAppAdapter implements ChannelAdapter {
     this.config = config;
     // secure: false — HMAC signature verification is handled by our own Hono middleware
     // (src/server/middleware/verify-signature.ts), so we don't need whatsapp-api-js to do it
-    this.api = new WhatsAppAPI({ token: config.accessToken, secure: false });
+    this.api = new WhatsAppAPI({
+      token: config.accessToken,
+      secure: false,
+      v: config.apiVersion ?? "v22.0",
+    });
   }
 
   /**
@@ -77,17 +87,7 @@ export class WhatsAppAdapter implements ChannelAdapter {
   }
 }
 
-function parseContent(msg: {
-  type: string;
-  text?: { body: string };
-  interactive?: {
-    type: string;
-    button_reply?: { id: string; title: string };
-    list_reply?: { id: string; title: string };
-  };
-  image?: { id: string; caption?: string };
-  location?: { latitude: number; longitude: number };
-}): InboundMessage["content"] {
+function parseContent(msg: WhatsAppMessage): InboundMessage["content"] {
   switch (msg.type) {
     case "text":
       return { type: "text", text: msg.text?.body ?? "" };
@@ -113,8 +113,8 @@ function parseContent(msg: {
     case "location":
       return {
         type: "location",
-        lat: msg.location?.latitude ?? 0,
-        lng: msg.location?.longitude ?? 0,
+        lat: Number.parseFloat(msg.location?.latitude ?? "0"),
+        lng: Number.parseFloat(msg.location?.longitude ?? "0"),
       };
 
     default:

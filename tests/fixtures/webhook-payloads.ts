@@ -135,7 +135,7 @@ export const locationPayload = {
                 id: "wamid.loc001",
                 timestamp: "1736000400",
                 type: "location",
-                location: { latitude: -23.5505, longitude: -46.6333 },
+                location: { latitude: "-23.5505", longitude: "-46.6333" },
               },
             ],
           },
