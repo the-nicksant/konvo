@@ -26,3 +26,4 @@ export type { SessionStore } from "./session/stores/interface.js";
 export type { ChannelAdapter } from "./channels/interface.js";
 export type { UserIdentity, AuthResult, UserPermissions, AuthConfig } from "./auth/types.js";
 export type { ToolDefinition, ActionLevel } from "./tools/types.js";
+export type { ToolConfig } from "./tools/define-tool.js";

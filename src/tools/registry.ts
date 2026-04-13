@@ -5,6 +5,9 @@ import type { ToolDefinition } from "./types.js";
 /**
  * Stores and manages all tools available to the agent.
  * Built at Konvo construction time from the user's `tools` config array.
+ *
+ * @internal Framework-internal. Users interact with tools via `defineTool()` and the
+ * `KonvoConfig.tools` array — they never instantiate or reference ToolRegistry directly.
  */
 export class ToolRegistry {
   private readonly tools = new Map<string, ToolDefinition>();
@@ -30,7 +33,8 @@ export class ToolRegistry {
   }
 
   /**
-   * Return all registered tools.
+   * Return all registered tools in registration order.
+   * Returns a new array on each call — mutations do not affect the registry.
    */
   getAll(): ToolDefinition[] {
     return Array.from(this.tools.values());

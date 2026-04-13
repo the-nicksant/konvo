@@ -51,6 +51,11 @@ describe("getAll", () => {
     expect(all.map((t) => t.name)).toContain("getOrderStatus");
     expect(all.map((t) => t.name)).toContain("createOrder");
   });
+
+  it("returns a new array on each call (copy semantics)", () => {
+    registry.add(getOrderStatus);
+    expect(registry.getAll()).not.toBe(registry.getAll());
+  });
 });
 
 describe("filterByPermissions", () => {

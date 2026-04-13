@@ -1,7 +1,8 @@
 import type { z } from "zod";
 import type { ActionLevel, ToolDefinition } from "./types.js";
 
-interface DefineToolConfig<TParams extends z.ZodType> {
+/** Configuration object passed to {@link defineTool} */
+export interface ToolConfig<TParams extends z.ZodType> {
   name: string;
   /**
    * LLM-optimized description. Write as instruction: "Use when the user wants to..."
@@ -35,7 +36,7 @@ interface DefineToolConfig<TParams extends z.ZodType> {
  * ```
  */
 export function defineTool<TParams extends z.ZodType>(
-  config: DefineToolConfig<TParams>,
+  config: ToolConfig<TParams>,
 ): ToolDefinition<TParams> {
   return {
     name: config.name,
