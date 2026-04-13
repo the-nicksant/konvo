@@ -1,9 +1,9 @@
-import type { LanguageModel } from 'ai'
-import type { AuthConfig } from '../auth/types.js'
-import type { ChannelAdapter } from '../channels/interface.js'
-import type { SessionStore } from '../session/stores/interface.js'
-import type { ToolDefinition } from '../tools/types.js'
-import type { WorkflowDefinition } from './workflow.js'
+import type { LanguageModel } from "ai";
+import type { AuthConfig } from "../auth/types.js";
+import type { ChannelAdapter } from "../channels/interface.js";
+import type { SessionStore } from "../session/stores/interface.js";
+import type { ToolDefinition } from "../tools/types.js";
+import type { WorkflowDefinition } from "./workflow.js";
 
 /** Safety configuration for tool execution */
 export interface SafetyConfig {
@@ -12,7 +12,7 @@ export interface SafetyConfig {
    * Any tool not listed defaults to 'read'.
    * @example { deleteAppointment: 'destructive', createBooking: 'write' }
    */
-  actionLevels?: Record<string, 'read' | 'write' | 'destructive'>
+  actionLevels?: Record<string, "read" | "write" | "destructive">;
 }
 
 /** Top-level framework configuration */
@@ -23,40 +23,40 @@ export interface KonvoConfig {
      * AI SDK model instance.
      * @example openai('gpt-4o-mini')
      */
-    model: LanguageModel
+    model: LanguageModel;
     /** System prompt defining the agent's persona, rules, and domain context */
-    instructions: string
+    instructions: string;
     /**
      * Max tool-calling iterations per turn.
      * Default: 5. Set higher for complex multi-tool chains.
      */
-    maxSteps?: number
-  }
+    maxSteps?: number;
+  };
 
   /** Channel adapter (e.g. WhatsApp) */
-  channel: ChannelAdapter
+  channel: ChannelAdapter;
 
   /** Tools the agent can call. Created with defineTool(). */
-  tools: ToolDefinition[]
+  tools: ToolDefinition[];
 
   /** Multi-step conversation workflows. Created with defineWorkflow(). */
-  workflows?: WorkflowDefinition[]
+  workflows?: WorkflowDefinition[];
 
   /** Authentication and authorization pipeline */
-  auth?: AuthConfig
+  auth?: AuthConfig;
 
   /**
    * Session persistence store.
    * Defaults to MemoryStore (with a warning). Use SQLiteStore for production.
    */
-  store?: SessionStore
+  store?: SessionStore;
 
   /** Safety rules for tool execution */
-  safety?: SafetyConfig
+  safety?: SafetyConfig;
 
   /**
    * Max messages to keep in conversation history per session.
    * Default: 20. Higher values increase LLM token usage.
    */
-  historyWindow?: number
+  historyWindow?: number;
 }

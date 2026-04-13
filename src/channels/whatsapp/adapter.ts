@@ -1,15 +1,15 @@
-import type { ChannelAdapter } from '../interface.js'
-import type { InboundMessage, OutboundMessage } from '../../types/messages.js'
+import type { InboundMessage, OutboundMessage } from "../../types/messages.js";
+import type { ChannelAdapter } from "../interface.js";
 
 export interface WhatsAppConfig {
   /** Phone Number ID from Meta Developer Portal */
-  phoneNumberId: string
+  phoneNumberId: string;
   /** Permanent access token */
-  accessToken: string
+  accessToken: string;
   /** Verify token you set when registering the webhook URL */
-  verifyToken: string
+  verifyToken: string;
   /** App Secret for HMAC signature verification */
-  appSecret: string
+  appSecret: string;
 }
 
 /**
@@ -22,7 +22,7 @@ export interface WhatsAppConfig {
  * ```
  */
 export function whatsapp(config: WhatsAppConfig): ChannelAdapter & { config: WhatsAppConfig } {
-  return new WhatsAppAdapter(config)
+  return new WhatsAppAdapter(config);
 }
 
 export class WhatsAppAdapter implements ChannelAdapter {
@@ -30,11 +30,11 @@ export class WhatsAppAdapter implements ChannelAdapter {
 
   parseInbound(_rawPayload: unknown): InboundMessage | null {
     // Implementation in Step 4
-    throw new Error('Not yet implemented')
+    throw new Error("Not yet implemented");
   }
 
   async sendOutbound(_to: string, _message: OutboundMessage): Promise<void> {
     // Implementation in Step 4
-    throw new Error('Not yet implemented')
+    throw new Error("Not yet implemented");
   }
 }

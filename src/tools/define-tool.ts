@@ -1,24 +1,24 @@
-import type { z } from 'zod'
-import type { ActionLevel, ToolDefinition } from './types.js'
+import type { z } from "zod";
+import type { ActionLevel, ToolDefinition } from "./types.js";
 
 interface DefineToolConfig<TParams extends z.ZodType> {
-  name: string
+  name: string;
   /**
    * LLM-optimized description. Write as instruction: "Use when the user wants to..."
    * The LLM selects tools based solely on this text.
    */
-  description: string
-  parameters: TParams
-  execute: (args: z.infer<TParams>) => Promise<unknown>
+  description: string;
+  parameters: TParams;
+  execute: (args: z.infer<TParams>) => Promise<unknown>;
   /** How to format the raw API result for display. Optional. */
-  formatResponse?: (result: unknown) => string
+  formatResponse?: (result: unknown) => string;
   /**
    * Safety classification.
    * - 'read' — no confirmation required (default)
    * - 'write' — modifies data, may require confirmation
    * - 'destructive' — irreversible, always requires confirmation
    */
-  actionLevel?: ActionLevel
+  actionLevel?: ActionLevel;
 }
 
 /**
@@ -42,7 +42,7 @@ export function defineTool<TParams extends z.ZodType>(
     description: config.description,
     parameters: config.parameters,
     execute: config.execute,
-    actionLevel: config.actionLevel ?? 'read',
+    actionLevel: config.actionLevel ?? "read",
     ...(config.formatResponse !== undefined && { formatResponse: config.formatResponse }),
-  }
+  };
 }

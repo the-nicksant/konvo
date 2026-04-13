@@ -1,11 +1,11 @@
-import type { SessionStore } from './interface.js'
-import type { Session, SessionId } from '../types.js'
+import type { Session, SessionId } from "../types.js";
+import type { SessionStore } from "./interface.js";
 
 export interface SQLiteStoreConfig {
   /** File path for the SQLite database. Use ':memory:' for tests. */
-  path: string
+  path: string;
   /** Session TTL in seconds. Default: 86400 (24 hours). */
-  ttl?: number
+  ttl?: number;
 }
 
 /**
@@ -21,22 +21,22 @@ export interface SQLiteStoreConfig {
 export class SQLiteStore implements SessionStore {
   constructor(_config: SQLiteStoreConfig) {
     // Implementation in Step 2
-    throw new Error('Not yet implemented')
+    throw new Error("Not yet implemented");
   }
 
   async get(_sessionId: SessionId): Promise<Session | null> {
-    throw new Error('Not yet implemented')
+    throw new Error("Not yet implemented");
   }
 
   async set(_sessionId: SessionId, _session: Session): Promise<void> {
-    throw new Error('Not yet implemented')
+    throw new Error("Not yet implemented");
   }
 
   async delete(_sessionId: SessionId): Promise<void> {
-    throw new Error('Not yet implemented')
+    throw new Error("Not yet implemented");
   }
 
   async cleanup(_olderThan: Date): Promise<number> {
-    throw new Error('Not yet implemented')
+    throw new Error("Not yet implemented");
   }
 }
