@@ -1,4 +1,9 @@
+import { createServer as createHttpServer, type Server } from "node:http";
+import type { Hono } from "hono";
 import { ConfigValidationError } from "../errors.js";
+import { MemoryStore } from "../session/stores/memory.js";
+import type { SessionStore } from "../session/stores/interface.js";
+import { createServer } from "../server/create-server.js";
 import type { KonvoConfig } from "../types/config.js";
 
 /**
@@ -6,29 +11,117 @@ import type { KonvoConfig } from "../types/config.js";
  *
  * @example
  * ```typescript
- * const agent = new Konvo({ agent: { model, instructions }, tools: [...], channel })
- * agent.listen(3000)
+ * const agent = new Konvo({
+ *   agent: { model: openai('gpt-4o-mini'), instructions: 'You are a helpful assistant.' },
+ *   channel: new WhatsAppAdapter({ ... }),
+ *   tools: [myTool],
+ *   webhook: { verifyToken: '...', appSecret: '...' },
+ * })
+ * await agent.listen(3000)
  * ```
  */
 export class Konvo {
   private readonly config: KonvoConfig;
+  private readonly store: SessionStore;
+  private server: Server | null = null;
 
   constructor(config: KonvoConfig) {
     validateConfig(config);
     this.config = config;
+    // Default to MemoryStore with a warning if no store is configured.
+    // Users should switch to SQLiteStore for production.
+    this.store = config.store ?? new MemoryStore();
   }
 
-  /** Start the HTTP server on the given port */
-  async listen(_port: number): Promise<void> {
-    // Implementation in Step 10
-    throw new Error("Not yet implemented");
+  /**
+   * Start the HTTP webhook server on the given port.
+   * Requires `config.webhook` to be set with `verifyToken` and `appSecret`.
+   *
+   * @param port TCP port to listen on
+   */
+  async listen(port: number): Promise<void> {
+    if (!this.config.webhook) {
+      throw new ConfigValidationError(
+        "webhook",
+        "required for listen() — provide verifyToken and appSecret from the Meta Developer Portal",
+      );
+    }
+
+    const app = createServer(
+      this.config as KonvoConfig & { webhook: NonNullable<KonvoConfig["webhook"]> },
+      this.store,
+    );
+
+    this.server = await serveHono(app, port);
+    console.log(`[konvo] Listening on http://localhost:${port}`);
   }
 
-  /** Gracefully stop the server */
+  /**
+   * Gracefully shut down the HTTP server.
+   * Does nothing if the server is not running.
+   */
   async stop(): Promise<void> {
-    // Implementation in Step 10
+    if (!this.server) return;
+
+    await new Promise<void>((resolve, reject) => {
+      this.server!.close((err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    this.server = null;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Node.js HTTP adapter for Hono
+//
+// Converts Node.js IncomingMessage ↔ Web API Request/Response so the
+// Hono app (which uses the standard Fetch API) can run in Node.js
+// without requiring @hono/node-server.
+// ---------------------------------------------------------------------------
+
+async function serveHono(app: Hono, port: number): Promise<Server> {
+  const server = createHttpServer(async (nodeReq, nodeRes) => {
+    const chunks: Buffer[] = [];
+    for await (const chunk of nodeReq) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+
+    const host = nodeReq.headers.host ?? "localhost";
+    const url = new URL(nodeReq.url ?? "/", `http://${host}`);
+    const hasBody = nodeReq.method !== "GET" && nodeReq.method !== "HEAD";
+
+    const webRequest = new Request(url, {
+      method: nodeReq.method ?? "GET",
+      headers: nodeReq.headers as Record<string, string>,
+      ...(hasBody && chunks.length > 0 && { body: Buffer.concat(chunks) }),
+    });
+
+    const webResponse = await app.fetch(webRequest);
+
+    nodeRes.writeHead(webResponse.status, Object.fromEntries(webResponse.headers));
+
+    if (webResponse.body) {
+      const reader = webResponse.body.getReader();
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        nodeRes.write(value);
+      }
+    }
+
+    nodeRes.end();
+  });
+
+  await new Promise<void>((resolve) => server.listen(port, resolve));
+  return server;
+}
+
+// ---------------------------------------------------------------------------
+// Config validation
+// ---------------------------------------------------------------------------
 
 function validateConfig(config: KonvoConfig): void {
   if (!config.agent) {
@@ -44,9 +137,26 @@ function validateConfig(config: KonvoConfig): void {
     throw new ConfigValidationError("agent.instructions", "required — provide a system prompt");
   }
   if (!config.channel) {
-    throw new ConfigValidationError("channel", "required — provide a channel adapter");
+    throw new ConfigValidationError(
+      "channel",
+      "required — provide a channel adapter, e.g. new WhatsAppAdapter({ ... })",
+    );
   }
-  if (!config.tools || config.tools.length === 0) {
-    throw new ConfigValidationError("tools", "at least one tool is required");
+  if (!Array.isArray(config.tools)) {
+    throw new ConfigValidationError("tools", "must be an array — use [] if no tools are needed");
+  }
+  if (config.webhook !== undefined) {
+    if (!config.webhook.verifyToken) {
+      throw new ConfigValidationError(
+        "webhook.verifyToken",
+        "required — get this from Meta Developer Portal → WhatsApp → Configuration",
+      );
+    }
+    if (!config.webhook.appSecret) {
+      throw new ConfigValidationError(
+        "webhook.appSecret",
+        "required — get this from Meta Developer Portal → App Settings → Basic",
+      );
+    }
   }
 }
