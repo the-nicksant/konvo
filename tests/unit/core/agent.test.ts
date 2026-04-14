@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { Konvo } from "../../../src/core/agent.js";
-import { ConfigValidationError } from "../../../src/errors.js";
+import { ConfigValidationError, KonvoError } from "../../../src/errors.js";
 import { createMockModel } from "../../fixtures/mock-model.js";
 
 const validChannel = {
@@ -137,5 +137,15 @@ describe("Konvo lifecycle", () => {
   it("stop() is a no-op when server is not running", async () => {
     const konvo = new Konvo(validConfig);
     await expect(konvo.stop()).resolves.toBeUndefined();
+  });
+
+  it("throws KonvoError when listen() is called while already running", async () => {
+    const konvo = new Konvo(validConfig);
+    await konvo.listen(0);
+    try {
+      await expect(konvo.listen(0)).rejects.toThrow(KonvoError);
+    } finally {
+      await konvo.stop();
+    }
   });
 });

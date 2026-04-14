@@ -1,6 +1,6 @@
 import { createServer as createHttpServer, type Server } from "node:http";
 import type { Hono } from "hono";
-import { ConfigValidationError } from "../errors.js";
+import { ConfigValidationError, KonvoError } from "../errors.js";
 import { MemoryStore } from "../session/stores/memory.js";
 import type { SessionStore } from "../session/stores/interface.js";
 import { createServer } from "../server/create-server.js";
@@ -40,6 +40,13 @@ export class Konvo {
    * @param port TCP port to listen on
    */
   async listen(port: number): Promise<void> {
+    if (this.server) {
+      throw new KonvoError(
+        "Server is already running. Call stop() before calling listen() again.",
+        "SERVER_ALREADY_RUNNING",
+      );
+    }
+
     if (!this.config.webhook) {
       throw new ConfigValidationError(
         "webhook",
@@ -99,7 +106,14 @@ async function serveHono(app: Hono, port: number): Promise<Server> {
       ...(hasBody && chunks.length > 0 && { body: Buffer.concat(chunks) }),
     });
 
-    const webResponse = await app.fetch(webRequest);
+    let webResponse: Response;
+    try {
+      webResponse = await app.fetch(webRequest);
+    } catch {
+      nodeRes.writeHead(500);
+      nodeRes.end();
+      return;
+    }
 
     nodeRes.writeHead(webResponse.status, Object.fromEntries(webResponse.headers));
 
@@ -115,7 +129,10 @@ async function serveHono(app: Hono, port: number): Promise<Server> {
     nodeRes.end();
   });
 
-  await new Promise<void>((resolve) => server.listen(port, resolve));
+  await new Promise<void>((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(port, resolve);
+  });
   return server;
 }
 
