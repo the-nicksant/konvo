@@ -1,0 +1,23 @@
+{
+  "name": "clinic-bot",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --import tsx/esm src/index.ts",
+    "dev": "node --watch --import tsx/esm src/index.ts"
+  },
+  "dependencies": {
+    "konvo": "file:../..",
+    "@ai-sdk/openai": "^1.0.0",
+    "@hono/node-server": "^1.13.0",
+    "ai": "^6.0.0",
+    "hono": "^4.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.5.0"
+  }
+}
