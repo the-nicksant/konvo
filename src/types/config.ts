@@ -75,4 +75,15 @@ export interface KonvoConfig {
    * Default: 20. Higher values increase LLM token usage.
    */
   historyWindow?: number;
+
+  /**
+   * Webhook server configuration.
+   * Required when using listen() or createServer().
+   */
+  webhook?: {
+    /** Token Meta sends for GET /webhook hub verification */
+    verifyToken: string;
+    /** App secret for HMAC-SHA256 signature verification of POST /webhook */
+    appSecret: string;
+  };
 }
