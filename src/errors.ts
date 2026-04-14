@@ -48,3 +48,25 @@ export class WorkflowError extends KonvoError {
     this.name = "WorkflowError";
   }
 }
+
+/** Thrown when a tool call is blocked because the user has not confirmed the action */
+export class ConfirmationRequiredError extends KonvoError {
+  constructor(
+    public readonly toolName: string,
+    public readonly actionLevel: string,
+  ) {
+    super(
+      `Tool '${toolName}' requires user confirmation (action level: ${actionLevel})`,
+      "CONFIRMATION_REQUIRED",
+    );
+    this.name = "ConfirmationRequiredError";
+  }
+}
+
+/** Thrown when a session exceeds its configured tool call rate limit */
+export class RateLimitError extends KonvoError {
+  constructor(message: string) {
+    super(message, "RATE_LIMIT_EXCEEDED");
+    this.name = "RateLimitError";
+  }
+}

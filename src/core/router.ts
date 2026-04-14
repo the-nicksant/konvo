@@ -1,6 +1,8 @@
 import { generateText, stepCountIs, tool } from "ai";
 import type { LanguageModel } from "ai";
 import type { ChannelAdapter } from "../channels/interface.js";
+import type { SafetyConfig } from "../safety/middleware.js";
+import { checkBeforeExecution } from "../safety/middleware.js";
 import type { SessionStore } from "../session/stores/interface.js";
 import type { Session } from "../session/types.js";
 import type { ToolDefinition } from "../tools/types.js";
@@ -31,6 +33,8 @@ export async function routeNewMessage(
     model: LanguageModel;
     instructions: string;
     maxSteps?: number;
+    /** Safety configuration applied to every tool call in this turn */
+    safety?: SafetyConfig;
   },
   availableTools: ToolDefinition[],
   channelAdapter: ChannelAdapter,
@@ -42,7 +46,7 @@ export async function routeNewMessage(
   // Append user message so it's included when the LLM processes the history
   session.messages.push({ role: "user", content: text });
 
-  const aiTools = buildAiTools(availableTools);
+  const aiTools = buildAiTools(availableTools, session, config.safety);
   const hasTools = availableTools.length > 0;
 
   const result = await generateText({
@@ -71,14 +75,20 @@ export async function routeNewMessage(
   }
 }
 
-function buildAiTools(toolDefs: ToolDefinition[]) {
+function buildAiTools(toolDefs: ToolDefinition[], session: Session, safety?: SafetyConfig) {
   return Object.fromEntries(
     toolDefs.map((t) => [
       t.name,
       tool({
         description: t.description,
         inputSchema: t.parameters,
-        execute: (input) => t.execute(input),
+        execute: (input) => {
+          // Safety: rate limit + confirmation check before every tool execution.
+          // confirmed=false here — the processor (Step 9) will set confirmed=true
+          // for pre-approved tool calls based on session state.
+          checkBeforeExecution(t, session.id, false, safety ?? {});
+          return t.execute(input);
+        },
       }),
     ]),
   );
