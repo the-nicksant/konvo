@@ -87,7 +87,8 @@ function buildAiTools(toolDefs: ToolDefinition[]) {
 function trimHistory(session: Session, historyWindow: number): void {
   if (session.messages.length > historyWindow) {
     const overflow = session.messages.length - historyWindow;
+    // Remove oldest messages from the front in pairs to avoid orphaned roles.
     const pairsToRemove = Math.ceil(overflow / 2) * 2;
-    session.messages.splice(1, pairsToRemove);
+    session.messages.splice(0, pairsToRemove);
   }
 }

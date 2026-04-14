@@ -124,14 +124,15 @@ describe("routeNewMessage — tool execution", () => {
 describe("routeNewMessage — history trimming", () => {
   it("trims history when it exceeds the window", async () => {
     const session = createTestSession({
-      // Pre-fill with 18 messages
-      messages: Array.from({ length: 18 }, (_, i) => ({
+      // Pre-fill with 19 messages: 19 + user + assistant = 21, which exceeds the window of 20
+      messages: Array.from({ length: 19 }, (_, i) => ({
         role: (i % 2 === 0 ? "user" : "assistant") as "user" | "assistant",
         content: `msg ${i}`,
       })),
     });
-    // After appending user + assistant, that's 20. Adding 1 more pushes over window of 20.
     await routeNewMessage(session, "new message", baseConfig, [], mockAdapter, mockStore, 20);
     expect(session.messages.length).toBeLessThanOrEqual(20);
+    // Oldest messages were removed — the first message should not be the original msg 0
+    expect(session.messages[0]).not.toEqual({ role: "user", content: "msg 0" });
   });
 });
