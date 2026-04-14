@@ -28,6 +28,15 @@ import { newBookingWorkflow, cancelBookingWorkflow } from "./workflows.js";
 startMockApi(3001);
 
 // ---------------------------------------------------------------------------
+// Shared webhook credentials
+// verifyToken is used by both the WhatsApp adapter (Hub GET verification)
+// and the top-level webhook config (HMAC POST verification).
+// ---------------------------------------------------------------------------
+
+const WA_VERIFY_TOKEN = process.env.WA_VERIFY_TOKEN ?? "";
+const WA_APP_SECRET = process.env.WA_APP_SECRET ?? "";
+
+// ---------------------------------------------------------------------------
 // Patient database lookup
 //
 // In production this would query your CRM or patient management system.
@@ -74,8 +83,8 @@ If a patient is not registered, politely let them know they need to register in 
   channel: whatsapp({
     phoneNumberId: process.env.WA_PHONE_NUMBER_ID ?? "",
     accessToken: process.env.WA_ACCESS_TOKEN ?? "",
-    verifyToken: process.env.WA_VERIFY_TOKEN ?? "",
-    appSecret: process.env.WA_APP_SECRET ?? "",
+    verifyToken: WA_VERIFY_TOKEN,
+    appSecret: WA_APP_SECRET,
   }),
 
   tools: [checkAvailability, getMyAppointments, bookAppointment, cancelAppointment],
@@ -100,8 +109,8 @@ If a patient is not registered, politely let them know they need to register in 
   store: new SQLiteStore({ path: "./sessions.db" }),
 
   webhook: {
-    verifyToken: process.env.WA_VERIFY_TOKEN ?? "",
-    appSecret: process.env.WA_APP_SECRET ?? "",
+    verifyToken: WA_VERIFY_TOKEN,
+    appSecret: WA_APP_SECRET,
   },
 });
 

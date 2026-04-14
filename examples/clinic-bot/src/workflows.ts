@@ -53,10 +53,19 @@ export const newBookingWorkflow = defineWorkflow({
     }),
 
     // Step 4: Confirm before booking
+    // Note: collectedData.pickSlot is the slotId (e.g. "2026-05-15-1000"), not the label.
+    // We look up the human-readable time from the availability result.
     step("confirm", {
       type: "confirmation",
-      message: (ctx) =>
-        `Confirm appointment on *${ctx.collectedData.askDate as string}* at *${ctx.collectedData.pickSlot as string}*?`,
+      message: (ctx) => {
+        const availability = ctx.collectedData.getAvailability as
+          | { availableSlots: Array<{ slotId: string; time: string }> }
+          | undefined;
+        const slotId = ctx.collectedData.pickSlot as string;
+        const slot = availability?.availableSlots?.find((s) => s.slotId === slotId);
+        const time = slot?.time ?? slotId;
+        return `Confirm appointment on *${ctx.collectedData.askDate as string}* at *${time}*?`;
+      },
       confirmLabel: "Yes, book it",
       cancelLabel: "No, cancel",
     }),
