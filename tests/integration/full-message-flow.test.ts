@@ -11,7 +11,7 @@ function sign(body: string): string {
   return `sha256=${createHmac("sha256", APP_SECRET).update(body).digest("hex")}`;
 }
 
-function makeApp(overrides?: { sendOutbound?: ReturnType<typeof vi.fn> }) {
+function makeApp(overrides?: { sendOutbound?: ReturnType<typeof vi.fn>; store?: ReturnType<typeof vi.fn> }) {
   const sendOutbound = overrides?.sendOutbound ?? vi.fn().mockResolvedValue(undefined);
   const store = {
     get: vi.fn().mockResolvedValue(null),
@@ -58,7 +58,7 @@ function makeApp(overrides?: { sendOutbound?: ReturnType<typeof vi.fn> }) {
     store,
   );
 
-  return { app, adapter, store, sendOutbound };
+  return { app, adapter, store: store, sendOutbound };
 }
 
 // ---------------------------------------------------------------------------
@@ -150,7 +150,7 @@ describe("POST /webhook — message processing", () => {
       return Promise.resolve();
     });
 
-    const { app } = makeApp({ sendOutbound });
+    const { app, store } = makeApp({ sendOutbound });
     const body = JSON.stringify(textMessagePayload);
 
     const res = await app.request("/webhook", {
@@ -168,6 +168,7 @@ describe("POST /webhook — message processing", () => {
       "5511999887766",
       expect.objectContaining({ type: "text" }),
     );
+    expect(store.set).toHaveBeenCalled();
   });
 
   it("returns 200 and skips processing for status update payloads", async () => {

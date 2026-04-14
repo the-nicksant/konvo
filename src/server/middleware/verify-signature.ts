@@ -1,4 +1,4 @@
-import { createHmac } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import type { MiddlewareHandler } from "hono";
 
 /**
@@ -18,7 +18,11 @@ export function verifySignature(appSecret: string): MiddlewareHandler {
     const body = await c.req.text();
     const expected = `sha256=${createHmac("sha256", appSecret).update(body).digest("hex")}`;
 
-    if (signature !== expected) return c.text("Invalid signature", 401);
+    // Use timingSafeEqual to prevent timing attacks that could leak the app secret
+    const sigBuf = Buffer.from(signature, "utf8");
+    const expBuf = Buffer.from(expected, "utf8");
+    const valid = sigBuf.length === expBuf.length && timingSafeEqual(sigBuf, expBuf);
+    if (!valid) return c.text("Invalid signature", 401);
 
     return next();
   };

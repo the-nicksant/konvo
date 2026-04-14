@@ -27,8 +27,8 @@ export function createServer(config: KonvoConfig & { webhook: NonNullable<KonvoC
     const token = c.req.query("hub.verify_token");
     const challenge = c.req.query("hub.challenge");
 
-    if (mode === "subscribe" && token === config.webhook.verifyToken) {
-      return c.text(challenge ?? "", 200);
+    if (mode === "subscribe" && token === config.webhook.verifyToken && challenge) {
+      return c.text(challenge, 200);
     }
 
     return c.text("Forbidden", 403);

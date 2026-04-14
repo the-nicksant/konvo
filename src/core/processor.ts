@@ -64,13 +64,15 @@ export async function processMessage(
     return;
   }
 
-  // Apply auth result to session
+  // Apply auth result to session and persist immediately so the cache is durable
+  // even if downstream processing throws before its own store.set call.
   session.customer = authResult.identity;
   session.permissions = authResult.permissions;
   session.auth = {
     status: authResult.identity !== null ? "authenticated" : "guest",
     cachedUntil: authResult.cachedUntil,
   };
+  await store.set(session.id, session);
 
   // Build tool registry (full set — filtered by permissions for LLM routing below)
   const toolRegistry = new ToolRegistry();
@@ -92,6 +94,10 @@ export async function processMessage(
   }
 
   if (session.workflow.name) {
+    // Re-execute the current step (recovery path — e.g. after a crashed send).
+    // NOTE: Since processing is fire-and-forget, a second message arriving while a
+    // tool step executes could trigger this branch concurrently. Step 10 (Konvo class)
+    // must serialize per-session processing to prevent duplicate step execution.
     await continueWorkflow(session, workflows, toolRegistry, config.channel, store);
     return;
   }
