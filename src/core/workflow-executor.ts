@@ -49,8 +49,12 @@ export async function startWorkflow(
 /**
  * Re-execute the current step of an active workflow.
  *
- * Used by the processor when a session has a non-pending active workflow and
- * needs to send the current prompt again (e.g. after re-routing).
+ * Called by the processor when a session has an active workflow with no pending
+ * confirmation — i.e. the step needs to be sent again (e.g. recovery after a
+ * failed send, or initial execution of a non-tool first step that was interrupted).
+ *
+ * Note: this re-executes (and re-sends) the current step. It does NOT advance to the
+ * next step — that happens only via `handleWorkflowResponse` or `advanceToNextStep`.
  */
 export async function continueWorkflow(
   session: Session,
@@ -188,6 +192,9 @@ async function executeStep(
     }
 
     session.workflow.collectedData[step.name] = result;
+    // Persist collected data before advancing — ensures recoverability if the process
+    // crashes between the tool call and the next store.set in the subsequent step.
+    await store.set(session.id, session);
 
     if (step.onSuccess) {
       await channelAdapter.sendOutbound(session.channelUserId, { type: "text", text: step.onSuccess });
@@ -251,6 +258,12 @@ function findStep(stepName: string, workflow: WorkflowDefinition): WorkflowStep 
   return workflow.steps.find((s) => s.name === stepName);
 }
 
+/**
+ * Returns true for null/undefined, empty strings, empty arrays, and empty objects.
+ * Primitive non-null values (including `false` and `0`) are considered non-empty —
+ * a tool that returns `false` to signal "not found" should use `onEmptyResult` by
+ * returning `null` or `""` instead.
+ */
 function isEmptyResult(result: unknown): boolean {
   if (result === null || result === undefined) return true;
   if (typeof result === "string") return result.trim() === "";

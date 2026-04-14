@@ -73,6 +73,14 @@ describe("startWorkflow", () => {
     ).rejects.toThrow(WorkflowError);
   });
 
+  it("throws WorkflowError when workflow has no steps", async () => {
+    const session = createTestSession();
+    const workflow = defineWorkflow({ name: "empty", trigger: "t", steps: [] });
+    await expect(
+      startWorkflow(session, "empty", [workflow], makeRegistry(), mockAdapter, mockStore),
+    ).rejects.toThrow(WorkflowError);
+  });
+
   it("sets workflow name and currentStep on the session", async () => {
     freshMocks();
     const session = createTestSession();
@@ -477,6 +485,7 @@ describe("continueWorkflow", () => {
       session.channelUserId,
       expect.objectContaining({ text: "Hello again?" }),
     );
+    expect(mockStore.set).toHaveBeenCalledWith(session.id, expect.objectContaining({ id: session.id }));
   });
 
   it("does nothing when there is no active workflow", async () => {
