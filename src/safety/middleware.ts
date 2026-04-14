@@ -1,16 +1,9 @@
 import { ConfirmationRequiredError } from "../errors.js";
+import type { SafetyConfig } from "../types/config.js";
 import type { ToolDefinition } from "../tools/types.js";
-import { type RateLimiter, requiresConfirmation } from "./guards.js";
+import { requiresConfirmation } from "./guards.js";
 
-export interface SafetyConfig {
-  /**
-   * Rate limiter instance. Must be shared across calls to accumulate counts.
-   * Omit to disable rate limiting.
-   */
-  rateLimiter?: RateLimiter;
-  /** Maximum tool calls per minute per session. Required when rateLimiter is set. */
-  maxCallsPerMinute?: number;
-}
+export type { SafetyConfig };
 
 /**
  * Run all safety checks before a tool executes.
@@ -33,7 +26,13 @@ export function checkBeforeExecution(
   config: SafetyConfig = {},
   now = Date.now(),
 ): void {
-  if (config.rateLimiter && config.maxCallsPerMinute !== undefined) {
+  if (config.rateLimiter) {
+    if (config.maxCallsPerMinute === undefined) {
+      throw new Error(
+        "SafetyConfig.rateLimiter is set but maxCallsPerMinute is missing. " +
+          "Provide maxCallsPerMinute to enable rate limiting.",
+      );
+    }
     config.rateLimiter.check(sessionId, config.maxCallsPerMinute, now);
   }
 

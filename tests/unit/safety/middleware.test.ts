@@ -158,4 +158,11 @@ describe("checkBeforeExecution — rate limiting", () => {
       expect(() => checkBeforeExecution(readTool, SESSION_ID, false)).not.toThrow();
     }
   });
+
+  it("throws when rateLimiter is set without maxCallsPerMinute", () => {
+    const rateLimiter = new RateLimiter();
+    expect(() =>
+      checkBeforeExecution(readTool, SESSION_ID, false, { rateLimiter }),
+    ).toThrow("maxCallsPerMinute");
+  });
 });

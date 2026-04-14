@@ -53,7 +53,7 @@ export class WorkflowError extends KonvoError {
 export class ConfirmationRequiredError extends KonvoError {
   constructor(
     public readonly toolName: string,
-    public readonly actionLevel: string,
+    public readonly actionLevel: "read" | "write" | "destructive",
   ) {
     super(
       `Tool '${toolName}' requires user confirmation (action level: ${actionLevel})`,

@@ -82,7 +82,7 @@ function buildAiTools(toolDefs: ToolDefinition[], session: Session, safety?: Saf
       tool({
         description: t.description,
         inputSchema: t.parameters,
-        execute: (input) => {
+        execute: async (input) => {
           // Safety: rate limit + confirmation check before every tool execution.
           // confirmed=false here — the processor (Step 9) will set confirmed=true
           // for pre-approved tool calls based on session state.

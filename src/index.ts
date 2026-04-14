@@ -15,7 +15,12 @@ export {
   AuthDeniedError,
   SessionNotFoundError,
   WorkflowError,
+  ConfirmationRequiredError,
+  RateLimitError,
 } from "./errors.js";
+
+// Safety
+export { RateLimiter } from "./safety/guards.js";
 
 // Public types
 export type { KonvoConfig, SafetyConfig } from "./types/config.js";

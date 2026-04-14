@@ -1,18 +1,34 @@
 import type { LanguageModel } from "ai";
 import type { AuthConfig } from "../auth/types.js";
 import type { ChannelAdapter } from "../channels/interface.js";
+import type { RateLimiter } from "../safety/guards.js";
 import type { SessionStore } from "../session/stores/interface.js";
 import type { ToolDefinition } from "../tools/types.js";
+import type { ActionLevel } from "../tools/types.js";
 import type { WorkflowDefinition } from "./workflow.js";
 
 /** Safety configuration for tool execution */
 export interface SafetyConfig {
   /**
-   * Per-tool action level overrides.
-   * Any tool not listed defaults to 'read'.
+   * Per-tool action level overrides. Useful when you want stricter safety
+   * for specific tools without editing their defineTool() call.
+   * Any tool not listed uses the level declared in its definition.
    * @example { deleteAppointment: 'destructive', createBooking: 'write' }
    */
-  actionLevels?: Record<string, "read" | "write" | "destructive">;
+  actionLevels?: Record<string, ActionLevel>;
+
+  /**
+   * Rate limiter instance for per-session tool call throttling.
+   * Must be shared across requests to accumulate counts.
+   * @example new RateLimiter()
+   */
+  rateLimiter?: RateLimiter;
+
+  /**
+   * Maximum tool calls per minute per session.
+   * Required when rateLimiter is set — omitting it disables rate limiting.
+   */
+  maxCallsPerMinute?: number;
 }
 
 /** Top-level framework configuration */
