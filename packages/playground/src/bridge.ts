@@ -37,7 +37,8 @@ export async function startBridge({
       let body = ''
       req.on('data', (chunk: Buffer) => { body += chunk.toString() })
       req.on('end', () => {
-        fetch(`http://localhost:${konvoPort}/simulate`, {
+        // Fire-and-forget: respond 200 immediately, let konvo process async
+        void fetch(`http://localhost:${konvoPort}/simulate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body,
