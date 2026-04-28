@@ -15,7 +15,6 @@
 import { openai } from "@ai-sdk/openai";
 import { Konvo } from "konvo";
 import { whatsapp } from "konvo/channels/whatsapp";
-import { SQLiteStore } from "konvo/stores/sqlite";
 import type { UserIdentity } from "konvo";
 import { SimulatorAdapter } from "@konvo/playground/adapter";
 import { startMockApi } from "./mock-api.js";
@@ -117,8 +116,9 @@ If a patient is not registered, politely let them know they need to register in 
     cacheFor: 3600, // re-check auth at most once per hour
   },
 
-  // In dev mode, omit the store to use the built-in MemoryStore (avoids native SQLite bindings)
-  ...(isDev ? {} : { store: new SQLiteStore({ path: "./sessions.db" }) }),
+  // In dev mode, use MemoryStore. In prod, lazy-import SQLiteStore to avoid loading
+  // the native binary when running with SimulatorAdapter (worktree / CI environments).
+  ...(isDev ? {} : { store: new (await import("konvo/stores/sqlite")).SQLiteStore({ path: "./sessions.db" }) }),
 
   ...(isDev
     ? {}
