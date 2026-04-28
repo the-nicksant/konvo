@@ -1,5 +1,5 @@
-import { WebSocketServer, type WebSocket } from 'ws'
-import type { InboundMessage, OutboundMessage } from 'konvo'
+import { WebSocketServer, WebSocket } from 'ws'
+import type { ChannelAdapter, InboundMessage, OutboundMessage } from 'konvo'
 import type { Hono } from 'hono'
 
 type SimulatorPayload = {
@@ -40,7 +40,7 @@ interface SimulatorAdapterOptions {
  * })
  * ```
  */
-export class SimulatorAdapter {
+export class SimulatorAdapter implements ChannelAdapter {
   private wss: WebSocketServer
   readonly port: number
 
@@ -109,7 +109,7 @@ export class SimulatorAdapter {
   private broadcast(event: DebugEvent): void {
     const msg = JSON.stringify(event)
     for (const client of this.wss.clients) {
-      if (client.readyState === (client as WebSocket).OPEN) {
+      if (client.readyState === WebSocket.OPEN) {
         client.send(msg)
       }
     }
