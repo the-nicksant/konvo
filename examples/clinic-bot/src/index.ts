@@ -15,8 +15,8 @@
 import { openai } from "@ai-sdk/openai";
 import { Konvo } from "konvo";
 import { whatsapp } from "konvo/channels/whatsapp";
-import { SQLiteStore } from "konvo/stores/sqlite";
 import type { UserIdentity } from "konvo";
+import { SimulatorAdapter } from "@konvo/playground/adapter";
 import { startMockApi } from "./mock-api.js";
 import { checkAvailability, getMyAppointments, bookAppointment, cancelAppointment } from "./tools.js";
 import { newBookingWorkflow, cancelBookingWorkflow } from "./workflows.js";
@@ -60,6 +60,21 @@ async function resolvePatient(phone: string): Promise<UserIdentity | null> {
 }
 
 // ---------------------------------------------------------------------------
+// Channel — swap to SimulatorAdapter in development
+// ---------------------------------------------------------------------------
+
+const isDev = process.env.NODE_ENV === "development";
+
+const channel = isDev
+  ? new SimulatorAdapter()
+  : whatsapp({
+      phoneNumberId: process.env.WA_PHONE_NUMBER_ID ?? "",
+      accessToken: process.env.WA_ACCESS_TOKEN ?? "",
+      verifyToken: WA_VERIFY_TOKEN,
+      appSecret: WA_APP_SECRET,
+    });
+
+// ---------------------------------------------------------------------------
 // Konvo agent
 // ---------------------------------------------------------------------------
 
@@ -80,12 +95,7 @@ If a patient is not registered, politely let them know they need to register in 
     maxSteps: 5,
   },
 
-  channel: whatsapp({
-    phoneNumberId: process.env.WA_PHONE_NUMBER_ID ?? "",
-    accessToken: process.env.WA_ACCESS_TOKEN ?? "",
-    verifyToken: WA_VERIFY_TOKEN,
-    appSecret: WA_APP_SECRET,
-  }),
+  channel,
 
   tools: [checkAvailability, getMyAppointments, bookAppointment, cancelAppointment],
 
@@ -106,12 +116,22 @@ If a patient is not registered, politely let them know they need to register in 
     cacheFor: 3600, // re-check auth at most once per hour
   },
 
-  store: new SQLiteStore({ path: "./sessions.db" }),
+  // In dev mode, use MemoryStore. In prod, lazy-import SQLiteStore to avoid loading
+  // the native binary when running with SimulatorAdapter (worktree / CI environments).
+  ...(isDev ? {} : { store: new (await import("konvo/stores/sqlite")).SQLiteStore({ path: "./sessions.db" }) }),
 
-  webhook: {
-    verifyToken: WA_VERIFY_TOKEN,
-    appSecret: WA_APP_SECRET,
-  },
+  ...(isDev
+    ? {}
+    : {
+        webhook: {
+          verifyToken: WA_VERIFY_TOKEN,
+          appSecret: WA_APP_SECRET,
+        },
+      }),
+
+  ...(isDev && channel instanceof SimulatorAdapter && {
+    onStepFinish: channel.debugHandler,
+  }),
 });
 
 // ---------------------------------------------------------------------------

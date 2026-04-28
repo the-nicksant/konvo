@@ -29,6 +29,10 @@ export interface ProcessorConfig {
   auth?: AuthConfig;
   safety?: SafetyConfig;
   historyWindow?: number;
+  onStepFinish?: (event: {
+    toolCalls: Array<{ toolName: string; args: unknown }>;
+    toolResults: Array<{ toolName: string; result: unknown }>;
+  }) => void | Promise<void>;
 }
 
 /**
@@ -116,6 +120,7 @@ export async function processMessage(
       instructions: config.agent.instructions,
       ...(config.agent.maxSteps !== undefined && { maxSteps: config.agent.maxSteps }),
       ...(config.safety !== undefined && { safety: config.safety }),
+      ...(config.onStepFinish !== undefined && { onStepFinish: config.onStepFinish }),
     },
     availableTools,
     config.channel,

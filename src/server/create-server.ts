@@ -49,6 +49,7 @@ export function createServer(config: KonvoConfig & { webhook: NonNullable<KonvoC
       ...(config.auth !== undefined && { auth: config.auth }),
       ...(config.safety !== undefined && { safety: config.safety }),
       ...(config.historyWindow !== undefined && { historyWindow: config.historyWindow }),
+      ...(config.onStepFinish !== undefined && { onStepFinish: config.onStepFinish }),
     };
 
     // Fire-and-forget: respond 200 immediately, process async
