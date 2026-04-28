@@ -25,6 +25,10 @@
       "import": "./dist/channels/whatsapp.js",
       "types": "./dist/channels/whatsapp.d.ts"
     },
+    "./channels/telegram": {
+      "import": "./dist/channels/telegram.js",
+      "types": "./dist/channels/telegram.d.ts"
+    },
     "./stores/sqlite": {
       "import": "./dist/stores/sqlite.js",
       "types": "./dist/stores/sqlite.d.ts"
@@ -62,6 +66,7 @@
     "@types/node": "^22.0.0",
     "ai": "^6.0.0",
     "tsup": "^8.0.0",
+    "tsx": "^4.21.0",
     "typescript": "^5.5.0",
     "vitest": "^3.0.0",
     "zod": "^3.23.0"

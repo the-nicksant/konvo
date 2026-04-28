@@ -47,17 +47,19 @@ export class Konvo {
       );
     }
 
-    if (!this.config.webhook) {
+    // Channels that implement registerRoutes (e.g. Telegram) manage their own
+    // webhook setup and don't need the WhatsApp-specific webhook config.
+    const channelProvidesRoutes =
+      typeof (this.config.channel as { registerRoutes?: unknown }).registerRoutes === "function";
+
+    if (!channelProvidesRoutes && !this.config.webhook) {
       throw new ConfigValidationError(
         "webhook",
         "required for listen() — provide verifyToken and appSecret from the Meta Developer Portal",
       );
     }
 
-    const app = createServer(
-      this.config as KonvoConfig & { webhook: NonNullable<KonvoConfig["webhook"]> },
-      this.store,
-    );
+    const app = createServer(this.config, this.store);
 
     this.server = await serveHono(app, port);
     console.log(`[konvo] Listening on http://localhost:${port}`);
