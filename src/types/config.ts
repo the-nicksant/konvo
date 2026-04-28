@@ -77,6 +77,18 @@ export interface KonvoConfig {
   historyWindow?: number;
 
   /**
+   * Called after each LLM step (tool call round-trip).
+   * Use with SimulatorAdapter.debugHandler to stream tool events to the playground.
+   *
+   * @example
+   * onStepFinish: channel instanceof SimulatorAdapter ? channel.debugHandler : undefined
+   */
+  onStepFinish?: (event: {
+    toolCalls: Array<{ toolName: string; args: unknown }>;
+    toolResults: Array<{ toolName: string; result: unknown }>;
+  }) => void | Promise<void>;
+
+  /**
    * Webhook server configuration.
    * Required when using listen() or createServer().
    */

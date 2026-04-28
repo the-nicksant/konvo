@@ -121,6 +121,47 @@ describe("routeNewMessage — tool execution", () => {
   });
 });
 
+describe("routeNewMessage — onStepFinish hook", () => {
+  const echoTool = defineTool({
+    name: "echo",
+    description: "Echoes the input",
+    parameters: z.object({ message: z.string() }),
+    execute: async ({ message }) => `echoed: ${message}`,
+    actionLevel: "read",
+  });
+
+  it("calls onStepFinish with toolCalls data when a tool is invoked", async () => {
+    const model = createMockModelWithToolCall("echo", { message: "hello" }, "Done.");
+    const session = createTestSession();
+    const onStepFinish = vi.fn().mockResolvedValue(undefined);
+
+    await routeNewMessage(
+      session,
+      "echo hello",
+      { ...baseConfig, model, onStepFinish },
+      [echoTool],
+      mockAdapter,
+      mockStore,
+    );
+
+    expect(onStepFinish).toHaveBeenCalled();
+    const callArg = onStepFinish.mock.calls[0][0];
+    expect(callArg).toHaveProperty("toolCalls");
+    expect(callArg.toolCalls).toEqual(
+      expect.arrayContaining([expect.objectContaining({ toolName: "echo" })]),
+    );
+  });
+
+  it("does not throw when onStepFinish is not provided", async () => {
+    const model = createMockModelWithToolCall("echo", { message: "hello" }, "Done.");
+    const session = createTestSession();
+
+    await expect(
+      routeNewMessage(session, "echo hello", { ...baseConfig, model }, [echoTool], mockAdapter, mockStore),
+    ).resolves.toBeUndefined();
+  });
+});
+
 describe("routeNewMessage — history trimming", () => {
   it("trims history when it exceeds the window", async () => {
     const session = createTestSession({

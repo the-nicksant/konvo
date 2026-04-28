@@ -35,6 +35,11 @@ export async function routeNewMessage(
     maxSteps?: number;
     /** Safety configuration applied to every tool call in this turn */
     safety?: SafetyConfig;
+    /** Called after each LLM step with tool call and result data */
+    onStepFinish?: (event: {
+      toolCalls: Array<{ toolName: string; args: unknown }>;
+      toolResults: Array<{ toolName: string; result: unknown }>;
+    }) => void | Promise<void>;
   },
   availableTools: ToolDefinition[],
   channelAdapter: ChannelAdapter,
@@ -49,13 +54,30 @@ export async function routeNewMessage(
   const aiTools = buildAiTools(availableTools, session, config.safety);
   const hasTools = availableTools.length > 0;
 
-  const result = await generateText({
+  // biome-ignore lint/suspicious/noExplicitAny: SDK generic variance in onStepFinish requires any
+  const generateTextOptions: Record<string, any> = {
     model: config.model,
     system: systemPrompt,
     messages: session.messages,
     ...(hasTools && { tools: aiTools }),
     stopWhen: stepCountIs(config.maxSteps ?? DEFAULT_MAX_STEPS),
-  });
+  };
+
+  if (config.onStepFinish !== undefined) {
+    const userCallback = config.onStepFinish;
+    generateTextOptions.onStepFinish = (stepResult: {
+      toolCalls: Array<{ toolName: string; input?: unknown }>;
+      toolResults: Array<{ toolName: string; output?: unknown }>;
+    }) => {
+      return userCallback({
+        toolCalls: stepResult.toolCalls.map((c) => ({ toolName: c.toolName, args: c.input })),
+        toolResults: stepResult.toolResults.map((r) => ({ toolName: r.toolName, result: r.output })),
+      });
+    };
+  }
+
+  // biome-ignore lint/suspicious/noExplicitAny: SDK generic variance in onStepFinish requires any
+  const result = await generateText(generateTextOptions as Parameters<typeof generateText>[0]);
 
   // Aggregate messages from all steps (tool calls, tool results, final text)
   for (const stepResult of result.steps) {
