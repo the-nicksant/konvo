@@ -6,3 +6,5 @@ coverage/
 *.db-wal
 .env
 .env.local
+scratch/
+.worktrees/
